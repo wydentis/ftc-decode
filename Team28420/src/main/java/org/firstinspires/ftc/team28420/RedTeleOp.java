@@ -69,52 +69,46 @@ public class RedTeleOp extends LinearOpMode {
                 );
             }
 
-            if (gamepad2.triangle) {
+            if (gamepad2.triangle || gamepad2.circle) {
+                if (gamepad2.circle) {
+                    act.resetRevolverTicks();
+                }
                 act.toggleShooterManualControl(false);
+
                 gamepad2.setLedColor(0, 255, 0, -1);
                 gamepad2.rumble(0);
             }
-            if(gamepad2.circle) {
-                act.resetRevolverTicks();
-                act.toggleShooterManualControl(false);
-                gamepad2.setLedColor(0, 255, 0, -1);
-                gamepad2.rumble(0);
+
+            int rovation = 0;
+
+            if (gamepad2.dpad_left)
+                rovation = -60;
+            else if (gamepad2.dpad_right)
+                rovation = 60;
+            else if (gamepad2.dpad_up)
+                rovation = -2;
+            else if (gamepad2.dpad_down)
+                rovation = 2;
+
+            if (rovation != 0) {
+                if (!dpad_active) {
+                    act.revolverRotate(rovation);
+
+                    gamepad2.setLedColor(255, 0, 0, -1);
+                    gamepad2.rumble(-1);
+
+                    dpad_active = true;
+                }
+            } else {
+                dpad_active = false;
             }
 
-            if (gamepad2.dpad_left && !dpad_active) {
-                act.revolverRotate(-60);
-                gamepad2.setLedColor(255, 0, 0, -1);
-                gamepad2.rumble(-1);
-                dpad_active = true;
+            if (gamepad1.left_bumper) {
+                double coef = (gamepad1.left_trigger > 0.5) ? -0.5 : 1.0;
+                act.setDribblerVelocityCoefficient((float) coef);
+            } else {
+                act.setDribblerVelocityCoefficient(0);
             }
-            if (gamepad2.dpad_right && !dpad_active) {
-                act.revolverRotate(60);
-                gamepad2.setLedColor(255, 0, 0, -1);
-                gamepad2.rumble(-1);
-                dpad_active = true;
-            }
-
-            if (gamepad2.dpad_up && !dpad_active) {
-                act.revolverRotate(-2);
-                gamepad2.setLedColor(255, 0, 0, -1);
-                gamepad2.rumble(-1);
-                dpad_active = true;
-            }
-            if (gamepad2.dpad_down && !dpad_active) {
-                act.revolverRotate(2);
-                gamepad2.setLedColor(255, 0, 0, -1);
-                gamepad2.rumble(-1);
-                dpad_active = true;
-            }
-
-            if (!gamepad2.dpad_right && !gamepad2.dpad_left) dpad_active = false;
-
-            if(gamepad1.left_bumper) {
-                if(gamepad1.left_trigger > 0.5) {
-                    act.setDribblerVelocityCoefficient(-0.5f);
-                } else act.setDribblerVelocityCoefficient(1);
-            } else act.setDribblerVelocityCoefficient(0);
-
 
             if (gamepad2.right_trigger > 0.4) {
                 act.setShooterVelocityCoefficient(gamepad2.right_trigger * gamepad2.right_trigger);
@@ -131,9 +125,7 @@ public class RedTeleOp extends LinearOpMode {
             }
 
             act.log();
-
             telemetry.update();
         }
     }
-
 }
