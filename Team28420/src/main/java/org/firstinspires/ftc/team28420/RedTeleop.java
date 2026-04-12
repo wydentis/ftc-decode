@@ -70,7 +70,7 @@ public class RedTeleop extends LinearOpMode {
         }
         handleRevolverInput();
 
-        float distanceToAprilTag = act.getDistanceToAprilTag(AprilTag.RED);
+        double distanceToAprilTag = act.getDistanceToAprilTag(AprilTag.RED);
         act.prepareForShoot(distanceToAprilTag);
         if (gamepad2.right_bumper) act.shoot();
     }

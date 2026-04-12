@@ -24,7 +24,7 @@ public class InterpolationTable {
     }
 
     /**
-     * Returns an interpolarted value for the given distance.
+     * Returns an interpolated value for the given distance.
      *
      * @param distance input distance to look up
      * @return interpolated velocity or edge value if out of bounds
