@@ -70,10 +70,8 @@ public class RedTeleop extends LinearOpMode {
         }
         handleRevolverInput();
 
-        float shooterPower = (float) ((gamepad2.right_trigger > 0.4) ? Math.pow(gamepad2.right_trigger, 2) : 0);
-        shooterPower *= gamepad2.left_bumper ? 1.28 : 1;
-
-        act.prepareForShoot(shooterPower);
+        float distanceToAprilTag = act.getDistanceToAprilTag(AprilTag.RED);
+        act.prepareForShoot(distanceToAprilTag);
         if (gamepad2.right_bumper) act.shoot();
     }
     private void rotateRevolver(int degrees) {

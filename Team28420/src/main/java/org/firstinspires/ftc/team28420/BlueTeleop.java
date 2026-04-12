@@ -4,7 +4,6 @@ import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.team28420.config.CameraConf;
 import org.firstinspires.ftc.team28420.config.GamepadConf;
 import org.firstinspires.ftc.team28420.config.ShooterConf;
@@ -70,10 +69,8 @@ public class BlueTeleop extends LinearOpMode {
         }
         handleRevolverInput();
 
-        float shooterPower = (float) ((gamepad2.right_trigger > 0.4) ? Math.pow(gamepad2.right_trigger, 2) : 0);
-        shooterPower *= gamepad2.left_bumper ? 1.28 : 1;
-
-        act.prepareForShoot(shooterPower);
+        float distanceToAprilTag = act.getDistanceToAprilTag(AprilTag.BLUE);
+        act.prepareForShoot(distanceToAprilTag);
         if (gamepad2.right_bumper) act.shoot();
     }
     private void rotateRevolver(int degrees) {

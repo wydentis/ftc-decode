@@ -21,12 +21,11 @@ import org.firstinspires.ftc.team28420.types.AprilTag;
 import org.firstinspires.ftc.team28420.types.MovementParams;
 import org.firstinspires.ftc.team28420.types.PolarVector;
 import org.firstinspires.ftc.team28420.types.Position;
+import org.firstinspires.ftc.team28420.types.ShooterCalculationMode;
 import org.firstinspires.ftc.team28420.types.WheelsRatio;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
-import org.opencv.core.Mat;
 import org.opencv.core.Point;
 
-import java.nio.charset.CharacterCodingException;
 import java.util.List;
 
 public class Actions {
@@ -40,10 +39,11 @@ public class Actions {
     private final Parking parking;
     private final BallDetection ballDetection;
     private final Telemetry telemetry;
+    double rpm;
 
     private YawPitchRollAngles lastAngles = new YawPitchRollAngles(AngleUnit.RADIANS, 0, 0, 0, 0);
     private List<LynxModule> allHubs;
-
+    private double lastValidDistance = 1.5;
     public Actions(HardwareMap hMap, boolean isAuto, Telemetry telemetry) throws InterruptedException {
         this.mv = new Movement(hMap);
         this.imu = hMap.get(IMU.class, GyroConf.IMU);
@@ -97,8 +97,32 @@ public class Actions {
         shooter.setHelperWheelCoefficient(k);
     }
 
-    public void prepareForShoot(float k) {
-        shooter.setVelocityCoefficient(k);
+    //todo: remove setVelocityCoefficient if not used
+    /**
+     * Prepares the shooter by calculating and setting the required velocity.
+     *
+     * @param distance current distance to the target
+     */
+    public void prepareForShoot(double distance) {
+        if (distance > 0) {
+            lastValidDistance = distance;
+        }
+
+        double rpm = calculateTargetRpm(lastValidDistance);
+        shooter.setVelocity(rpm);
+    }
+
+    /**
+     * Dispatches the calculation based on the selected mode.
+     *
+     * @param distance distance to the target
+     * @return calculated target RPM
+     */
+    private double calculateTargetRpm(double distance) {
+        if (ShooterConf.SHOOTER_CALCULATION_MODE == ShooterCalculationMode.TABLE) {
+            return shooter.calculateRpmByTable(distance);
+        }
+        return shooter.calculateRpmByRegression(distance);
     }
 
     public void afterStart() {
@@ -166,6 +190,15 @@ public class Actions {
         AprilTagDetection detection = cam.getAprilTagDetection(tag);
         MovementParams params = cam.getMovementParamsToOffset(detection, offsetX, offsetY);
         return Movement.vectorToRatios(params);
+    }
+
+    public float getDistanceToAprilTag(AprilTag aprilTag) {
+        AprilTagDetection detection = cam.getAprilTagDetection(aprilTag);
+        if (detection != null && detection.ftcPose != null) {
+            return (float) detection.ftcPose.y;
+        }
+
+        return -1.0f;
     }
 
     public void park() {
