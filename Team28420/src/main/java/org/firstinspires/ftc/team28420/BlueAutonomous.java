@@ -84,7 +84,7 @@ public class BlueAutonomous extends LinearOpMode {
 //            }
 
             if (elapsedTime.milliseconds() >= 4900 && elapsedTime.milliseconds() <= 7000) {
-                act.prepareForShoot(1);
+                act.prepareForShoot(1000);
             } else if (elapsedTime.milliseconds() >= 5550 && elapsedTime.milliseconds() < 23500 && !shootingDone) {
                 if (act.isShootable()) {
                     if (act.shoot()) {
@@ -96,7 +96,7 @@ public class BlueAutonomous extends LinearOpMode {
                     act.prepareForShoot(0);
                 }
             } else if (elapsedTime.milliseconds() >= 23500 && elapsedTime.milliseconds() <= 25000) {
-                act.prepareForShoot(1);
+                act.prepareForShoot(1000);
                 shootingDone = false;
                 counter = 1;
             } else if(elapsedTime.milliseconds() >= 25000 && !shootingDone) {

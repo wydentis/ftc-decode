@@ -393,11 +393,34 @@ public class Shooter {
     }
 
 
-    public void setVelocityCoefficient(float k) {
-        double desired = ShooterConf.VELOCITY * k;
+    public void setVelocity(double rpm) {
+        left.setVelocity(rpm);
+        right.setVelocity(rpm);
+    }
 
-        left.setVelocity(desired);
-        right.setVelocity(desired);
+    /**
+     * Calculates RPM for a given distance using a quadratic regression.
+     * <p>
+     * Coefficients are sourced from {@link ShooterConf#SHOOTER_A}, {@link ShooterConf#SHOOTER_B}, and {@link ShooterConf#SHOOTER_C}.
+     * @param distance distance to AprilTag (meters)
+     * @return target shooter RPM
+     */
+    public double calculateRpmByRegression(double distance) {
+        double a = ShooterConf.SHOOTER_A;
+        double b = ShooterConf.SHOOTER_B;
+        double c = ShooterConf.SHOOTER_C;
+
+        double targetRpm = a * distance * distance + b * distance + c;
+        return Math.max(ShooterConf.MIN_SPEED, Math.min(ShooterConf.MAX_SPEED, targetRpm));
+    }
+
+    /**
+     * Calculates RPM for a given distance using a {@link InterpolationTable}.
+     * @param distance distance to AprilTag (meters)
+     * @return target shooter RPM
+     */
+    public double calculateRpmByTable(double distance) {
+        return ShooterConf.SHOOTER_TABLE.getInterpolatedValue(distance);
     }
 
     public boolean shoot() {
