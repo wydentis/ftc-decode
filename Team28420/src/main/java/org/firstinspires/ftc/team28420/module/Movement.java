@@ -3,6 +3,7 @@ package org.firstinspires.ftc.team28420.module;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 
 import org.firstinspires.ftc.team28420.config.WheelBaseConf;
 import org.firstinspires.ftc.team28420.types.MovementParams;
@@ -15,6 +16,10 @@ public class Movement {
     private double currentRF = 0.0;
     private double currentLB = 0.0;
     private double currentRB = 0.0;
+    public static double p = 0.095;
+    public static double i = 0.0;
+    public static double d = 0.0;
+    public static double f = 11.7;
 
     public static WheelsRatio<Double> vectorToRatios(MovementParams params) {
         double theta = params.getMoveVector().getTheta();
@@ -52,6 +57,13 @@ public class Movement {
         setMotorsMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         setMotorsMode(DcMotor.RunMode.RUN_USING_ENCODER);
         setMotorsZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+        PIDFCoefficients pidfNew = new PIDFCoefficients(p, i, d, f);
+
+        leftFront.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, pidfNew);
+        rightFront.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, pidfNew);
+        leftBack.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, pidfNew);
+        rightBack.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, pidfNew);
     }
 
     public void setMotorsMode(DcMotor.RunMode mode) {
