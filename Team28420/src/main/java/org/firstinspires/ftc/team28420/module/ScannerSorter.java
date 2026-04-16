@@ -15,7 +15,7 @@ public class ScannerSorter {
     /*** SCANNER CONSTANTS ***/
     public static double SCANNED_BALL_MS = 30;
     public static double BALL_DETECTION_THRESHOLD = 2;
-    private boolean scanAllowed = false;
+    private boolean scanAllowed = true;
     private boolean ballPresent = false;
     private boolean potentialBallDetected = false;
     private final MotifSorter sorter = new MotifSorter();

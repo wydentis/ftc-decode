@@ -95,7 +95,7 @@ public class Revolver {
     }
 
     public boolean isBusy() {
-        return revolver.isBusy();
+        return state == RevolverState.REVOLVER_TURNING;
     }
 
     /**

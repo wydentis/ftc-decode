@@ -26,7 +26,7 @@ public class IntakeHandler {
     /*** TIMERS ***/
     private final ElapsedTime shooterTime = new ElapsedTime();
 
-    private double pusherReadyTime = 175;
+    private static double pusherReadyTime = 175;
 
     private ShooterState state = ShooterState.IDLE;
     public IntakeHandler(HardwareMap hMap, Telemetry telemetry) {
@@ -59,7 +59,11 @@ public class IntakeHandler {
                 }
                 break;
             case STOP_SHOOTING:
-                if(shooterTime.milliseconds() > pusherReadyTime) snapToNearestSlot();
+                if(shooterTime.milliseconds() > pusherReadyTime) {
+                    snapToNearestSlot();
+                    state = ShooterState.IDLE;
+                    shooterTime.reset();
+                }
                 break;
             case IDLE:
                 if(!isNearShootingSlot()) scannerSorter.scanBall();
