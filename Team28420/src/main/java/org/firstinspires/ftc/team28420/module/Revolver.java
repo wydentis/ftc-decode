@@ -12,19 +12,24 @@ public class Revolver {
 
     /*** CONFIG CONSTANTS ***/
     public static double SORT_MOTOR_TICKS_PER_TURN = 1075.0;
-    public static double MAX_VEL = 2000; // Ticks per second
-    public static double MAX_ACCEL = 1500; // Ticks per second squared
+    public static double MAX_VEL = 1400; // ticks/sec
+    public static double MAX_ACCEL = 2200; // ticks/sec^2
 
     /*** PIDF CONSTANTS ***/
     public static double kP = 0.005;
-    public static double kV = 1.0 / MAX_VEL; // Feedforward Velocity
-    public static double kA = 0.0001;        // Feedforward Acceleration
+    public static double kV = 1.0 / MAX_VEL;
+    public static double kA = 0.0001;
 
+    /*** FINISH THRESHOLDS ***/
+    public static double POSITION_TOL_TICKS = 6.0;
+    public static double VELOCITY_TOL_TPS = 22.0;
+    public static double MIN_PROFILE_TIME = 0.05; // sec
 
     /*** MOTION PROFILING ***/
     private double profileStartTime = 0;
     private double startPosition = 0;
-    private double globalTarget = 0;
+    private double targetTicks = 0;
+    private double plannedTotalTime = 0;
 
     /*** HARDWARE ***/
     private final DcMotorEx revolver;
@@ -37,57 +42,78 @@ public class Revolver {
         this.revolver = hMap.get(DcMotorEx.class, "sort");
     }
 
-
-    /**
-     * Responsible for resetting all the internal variables into their initial state.
-     */
     public void setup() {
         revolver.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         state = RevolverState.IDLE;
         profileStartTime = 0;
         startPosition = 0;
-        globalTarget = 0;
+        targetTicks = 0;
+        plannedTotalTime = 0;
         revolver.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        revolver.setPower(0);
     }
 
-    /**
-     *  Gives proportional power for current profile of revolver rotation.
-     *  It uses motion profiling with 3 steps: acceleration, cruising, deceleration.
-     * @return power needed on current step of rotation
-     */
     private double calculateProfilePower() {
-        double timeElapsed = profileTimer.seconds() - profileStartTime;
-        double distance = globalTarget - startPosition;
-        if (Math.abs(distance) < 2) return 0;
+        double t = profileTimer.seconds() - profileStartTime;
+        double distance = targetTicks - startPosition;
+        double sgn = Math.signum(distance);
+        double distAbs = Math.abs(distance);
 
-        double accelTime = MAX_VEL / MAX_ACCEL;
-        double accelDist = 0.5 * MAX_ACCEL * Math.pow(accelTime, 2);
+        if (distAbs < 1e-6) return 0.0;
 
-        double targetVel = 0;
-        double targetAccel = 0;
-        double profilePos = startPosition;
+        double accelTimeMax = MAX_VEL / MAX_ACCEL;
+        double accelDistMax = 0.5 * MAX_ACCEL * accelTimeMax * accelTimeMax;
 
-        if (Math.abs(distance) > 2 * accelDist) {
-            double cruiseDist = Math.abs(distance) - (2 * accelDist);
+        double targetVel;
+        double targetAccel;
+        double profilePos;
+
+        if (distAbs >= 2.0 * accelDistMax) {
+            // Trapezoid
+            double cruiseDist = distAbs - 2.0 * accelDistMax;
             double cruiseTime = cruiseDist / MAX_VEL;
+            double totalTime = 2.0 * accelTimeMax + cruiseTime;
 
-            if (timeElapsed < accelTime) {
-                targetVel = MAX_ACCEL * timeElapsed;
+            if (t < 0) t = 0;
+            if (t > totalTime) t = totalTime;
+
+            if (t < accelTimeMax) {
+                targetVel = MAX_ACCEL * t;
                 targetAccel = MAX_ACCEL;
-                profilePos = startPosition + Math.signum(distance) * (0.5 * MAX_ACCEL * Math.pow(timeElapsed, 2));
-            } else if (timeElapsed < accelTime + cruiseTime) {
+                profilePos = startPosition + sgn * (0.5 * MAX_ACCEL * t * t);
+            } else if (t < accelTimeMax + cruiseTime) {
+                double tc = t - accelTimeMax;
                 targetVel = MAX_VEL;
-                profilePos = startPosition + Math.signum(distance) * (accelDist + MAX_VEL * (timeElapsed - accelTime));
-            } else if (timeElapsed < 2 * accelTime + cruiseTime) {
-                double decelTime = timeElapsed - accelTime - cruiseTime;
-                targetVel = MAX_VEL - (MAX_ACCEL * decelTime);
-                targetAccel = -MAX_ACCEL;
-                profilePos = startPosition + Math.signum(distance) * (accelDist + cruiseDist + (MAX_VEL * decelTime) - (0.5 * MAX_ACCEL * Math.pow(decelTime, 2)));
+                targetAccel = 0;
+                profilePos = startPosition + sgn * (accelDistMax + MAX_VEL * tc);
             } else {
-                profilePos = globalTarget;
+                double td = t - accelTimeMax - cruiseTime;
+                targetVel = MAX_VEL - MAX_ACCEL * td;
+                targetAccel = -MAX_ACCEL;
+                profilePos = startPosition + sgn *
+                        (accelDistMax + cruiseDist + MAX_VEL * td - 0.5 * MAX_ACCEL * td * td);
             }
         } else {
-            profilePos = globalTarget;
+            // Triangular
+            double accelTime = Math.sqrt(distAbs / MAX_ACCEL);
+            double peakVel = MAX_ACCEL * accelTime;
+            double totalTime = 2.0 * accelTime;
+
+            if (t < 0) t = 0;
+            if (t > totalTime) t = totalTime;
+
+            if (t < accelTime) {
+                targetVel = MAX_ACCEL * t;
+                targetAccel = MAX_ACCEL;
+                profilePos = startPosition + sgn * (0.5 * MAX_ACCEL * t * t);
+            } else {
+                double td = t - accelTime;
+                targetVel = peakVel - MAX_ACCEL * td;
+                targetAccel = -MAX_ACCEL;
+                double accelDist = 0.5 * MAX_ACCEL * accelTime * accelTime;
+                profilePos = startPosition + sgn *
+                        (accelDist + peakVel * td - 0.5 * MAX_ACCEL * td * td);
+            }
         }
 
         double currentPos = revolver.getCurrentPosition();
@@ -98,43 +124,51 @@ public class Revolver {
         return state == RevolverState.REVOLVER_TURNING;
     }
 
-    /**
-     * @return Current actual angle
-      */
     public double currentAngle() {
         return revolver.getCurrentPosition() / SORT_MOTOR_TICKS_PER_TURN * 360.0;
     }
 
-    /**
-     * Rotates revolver by given degrees
-     * @param deg - degrees to turn
-     */
     public void rotateRevolver(double deg) {
-        double ticksToMove = deg * SORT_MOTOR_TICKS_PER_TURN / 360.0;
-        rotateRevolverTicks(ticksToMove);
+        double deltaTicks = deg * SORT_MOTOR_TICKS_PER_TURN / 360.0;
+
+        double newTarget = targetTicks + deltaTicks;
+
+        startMotionProfile(newTarget);
     }
-
-    private void rotateRevolverTicks(double ticks) {
+    private void startMotionProfile(double target) {
         startPosition = revolver.getCurrentPosition();
-        globalTarget = startPosition + ticks;
-
+        targetTicks = target;
         profileStartTime = profileTimer.seconds();
-        revolver.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+        double distAbs = Math.abs(targetTicks - startPosition);
+        if (distAbs < 1.0) {
+            state = RevolverState.IDLE;
+            return;
+        }
+
+        double accelTimeMax = MAX_VEL / MAX_ACCEL;
+        double accelDistMax = 0.5 * MAX_ACCEL * accelTimeMax * accelTimeMax;
+
+        if (distAbs >= 2.0 * accelDistMax) {
+            plannedTotalTime = 2.0 * accelTimeMax + (distAbs - 2.0 * accelDistMax) / MAX_VEL;
+        } else {
+            plannedTotalTime = 2.0 * Math.sqrt(distAbs / MAX_ACCEL);
+        }
+
         state = RevolverState.REVOLVER_TURNING;
     }
 
-    /**
-     * Updating state behaviour of revolver
-     */
     public void update() {
         switch (state) {
             case REVOLVER_TURNING:
-                double power = calculateProfilePower();
-                revolver.setPower(power);
+                revolver.setPower(calculateProfilePower());
 
-                double accelTime = MAX_VEL / MAX_ACCEL;
-                double cruiseTime = (Math.abs(globalTarget - startPosition) - (MAX_VEL / MAX_ACCEL * MAX_VEL)) / MAX_VEL;
-                if (profileTimer.seconds() - profileStartTime > (2 * accelTime + Math.max(0, cruiseTime)) + 0.1) {
+                double err = Math.abs(targetTicks - revolver.getCurrentPosition());
+                double vel = Math.abs(revolver.getVelocity());
+                double elapsed = profileTimer.seconds() - profileStartTime;
+
+                if ((err <= POSITION_TOL_TICKS && vel <= VELOCITY_TOL_TPS && elapsed > MIN_PROFILE_TIME)
+                        || elapsed > plannedTotalTime + 0.35) {
                     revolver.setPower(0);
                     state = RevolverState.IDLE;
                 }
@@ -150,7 +184,7 @@ public class Revolver {
         telemetry.addData("CURRENT REVOLVER TICKS", revolver.getCurrentPosition());
         telemetry.addData("REVOLVER SPEED TPS", revolver.getVelocity());
         telemetry.addData("ANGLE", currentAngle());
+        telemetry.addData("REVOLVER TARGET", targetTicks);
+        telemetry.addData("REVOLVER BUSY", isBusy());
     }
-
-
 }

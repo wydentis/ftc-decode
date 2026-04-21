@@ -55,7 +55,6 @@ public class IntakeHandler {
                 break;
             case STOP_SHOOTING:
                 if (shooterTime.milliseconds() > pusherReadyTime) {
-                    snapToNearestSlot();
                     state = ShooterState.IDLE;
                     shooterTime.reset();
                 }
@@ -65,8 +64,7 @@ public class IntakeHandler {
                 break;
         }
     }
-
-    /**
+    /*
      * @return True if revolver is in shooting position
      */
     private boolean isNearShootingSlot() {
