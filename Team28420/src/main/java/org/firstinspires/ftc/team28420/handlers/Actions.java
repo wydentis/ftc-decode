@@ -48,6 +48,10 @@ public class Actions {
         return Math.abs(axis) < threshold ? 0 : axis;
     }
 
+    public static Telemetry getFTCDashboardTelemetry(Telemetry baseTelemetry) {
+        return new MultipleTelemetry(baseTelemetry, FtcDashboard.getInstance().getTelemetry());
+    }
+
     public void setup() {
         robotController.setManualCachingMode();
         movement.setup();
@@ -56,10 +60,8 @@ public class Actions {
         cameraHandler.setup();
         intakeHandler.setup();
         flywheel.setup();
-    }
 
-    public Telemetry getFTCDashboardTelemetry(Telemetry baseTelemetry) {
-        return new MultipleTelemetry(baseTelemetry, FtcDashboard.getInstance().getTelemetry());
+        setMotif();
     }
 
     public void update() {
@@ -70,12 +72,6 @@ public class Actions {
         intakeHandler.update();
     }
 
-    public void setMotif() {
-        if (intakeHandler.getTargetMotif() == null) {
-            intakeHandler.setTargetMotif(cameraHandler.getMotif());
-        }
-    }
-
     public void shoot() {
         intakeHandler.shoot();
     }
@@ -83,6 +79,11 @@ public class Actions {
     public void shootWithCheck() {
         if (!odometry.getRobotPosition().isValidForShoot()) return;
         shoot();
+    }
+
+    public void moveByParamsWithOffset(MovementParams params, double angleOffset) {
+        params.getMoveVector().rotate(angleOffset);
+        moveWithFixByParams(params);
     }
 
     public void moveToAprilTag() {
@@ -102,6 +103,22 @@ public class Actions {
         intakeHandler.log(telemetry);
         flywheel.log(telemetry);
         dribbler.log(telemetry);
+    }
+
+    private void setMotif() {
+        if (intakeHandler.getTargetMotif() == null) {
+            intakeHandler.setTargetMotif(cameraHandler.getMotif());
+        }
+    }
+
+    public void setDribblerState(boolean dribble, boolean invert) {
+        if (dribble && invert) {
+            dribbler.setDribblerState(Dribbler.DribblerState.DROP);
+        } else if (dribble) {
+            dribbler.setDribblerState(Dribbler.DribblerState.INTAKE);
+        } else {
+            dribbler.setDribblerState(Dribbler.DribblerState.IDLE);
+        }
     }
 
     private void moveWithFixByParams(MovementParams params) {
