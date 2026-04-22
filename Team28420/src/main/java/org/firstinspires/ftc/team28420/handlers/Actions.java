@@ -86,6 +86,12 @@ public class Actions {
         moveWithFixByParams(params);
     }
 
+    public void moveToPosition(Position position, double targetAngle) {
+        PolarVector vector = getBestPosition().getVectorTo(position);
+        double rotateForce = (odometry.getRobotHeading() - targetAngle) / (Math.PI / 4);
+        moveWithFixByParams(new MovementParams(vector, rotateForce));
+    }
+
     public void moveToAprilTag() {
         PolarVector vector = getBestPosition().getVectorToNearestValidShootPoint();
         moveWithFixByParams(new MovementParams(vector, getAngleForAprilTag()));
