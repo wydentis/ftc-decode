@@ -15,7 +15,7 @@ public class Flywheel {
         public static double kI = 0;
         public static double kP = 37;
         public static double kD = 2;
-        public static double MAX_VEL = 1000;
+        public static double MAX_VEL = 600;
     }
 
     /*** HARDWARE ***/

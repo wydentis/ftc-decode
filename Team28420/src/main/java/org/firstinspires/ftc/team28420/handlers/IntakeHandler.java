@@ -24,6 +24,7 @@ public class IntakeHandler {
     private Revolver revolver = null;
     private ShooterState state = ShooterState.IDLE;
 
+
     public IntakeHandler(HardwareMap hMap) {
         pusher = new Pusher(hMap);
         revolver = new Revolver(hMap);
@@ -67,6 +68,7 @@ public class IntakeHandler {
                     revolver.rotateRevolver(0);
                     shooterTime.reset();
                 }
+                break;
             case IDLE:
                 if (!isNearShootingSlot()) scannerSorter.scanBall();
                 break;
