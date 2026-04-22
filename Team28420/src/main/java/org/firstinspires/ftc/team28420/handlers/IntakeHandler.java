@@ -11,11 +11,11 @@ import org.firstinspires.ftc.team28420.module.ScannerSorter;
 
 /**
  * Shooter class
- * is responsible for scanning balls, sorting motif with revolver and flywheel activation
+ * is responsible for scanning balls, sorting motif with revolver activation
  */
 public class IntakeHandler {
 
-    private static final double pusherReadyTime = 175;
+    public static double pusherReadyTime = 175;
     /*** HARDWARE ***/
     private final Pusher pusher;
     /*** TIMERS ***/

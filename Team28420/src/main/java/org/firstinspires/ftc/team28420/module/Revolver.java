@@ -1,24 +1,25 @@
 package org.firstinspires.ftc.team28420.module;
 
+import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
-
+@Config
 public class Revolver {
     public enum RevolverState {IDLE, REVOLVER_TURNING}
 
     /*** CONFIG CONSTANTS ***/
     public static double SORT_MOTOR_TICKS_PER_TURN = 1075.0;
-    public static double MAX_VEL = 1400; // ticks/sec
-    public static double MAX_ACCEL = 2200; // ticks/sec^2
+    public static double MAX_VEL = 2100; // ticks/sec
+    public static double MAX_ACCEL = 4400; // ticks/sec^2
 
     /*** PIDF CONSTANTS ***/
-    public static double kP = 0.005;
+    public static double kP = 0.0052;
     public static double kV = 1.0 / MAX_VEL;
-    public static double kA = 0.0001;
+    public static double kA = 0.00004;
 
     /*** FINISH THRESHOLDS ***/
     public static double POSITION_TOL_TICKS = 6.0;
@@ -51,6 +52,7 @@ public class Revolver {
         plannedTotalTime = 0;
         revolver.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         revolver.setPower(0);
+        revolver.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
     }
 
     private double calculateProfilePower() {
@@ -68,6 +70,9 @@ public class Revolver {
         double targetAccel;
         double profilePos;
 
+        // Check if the profile has completely finished
+        boolean isFinished = false;
+
         if (distAbs >= 2.0 * accelDistMax) {
             // Trapezoid
             double cruiseDist = distAbs - 2.0 * accelDistMax;
@@ -75,7 +80,10 @@ public class Revolver {
             double totalTime = 2.0 * accelTimeMax + cruiseTime;
 
             if (t < 0) t = 0;
-            if (t > totalTime) t = totalTime;
+            if (t >= totalTime) {
+                t = totalTime;
+                isFinished = true;
+            }
 
             if (t < accelTimeMax) {
                 targetVel = MAX_ACCEL * t;
@@ -100,7 +108,10 @@ public class Revolver {
             double totalTime = 2.0 * accelTime;
 
             if (t < 0) t = 0;
-            if (t > totalTime) t = totalTime;
+            if (t >= totalTime) {
+                t = totalTime;
+                isFinished = true;
+            }
 
             if (t < accelTime) {
                 targetVel = MAX_ACCEL * t;
@@ -116,8 +127,16 @@ public class Revolver {
             }
         }
 
+        // Fix 2: If the profile is done, we shouldn't have any residual acceleration forces
+        if (isFinished) {
+            targetVel = 0;
+            targetAccel = 0;
+            profilePos = targetTicks; // lock exactly to target
+        }
+
+        // Fix 1: Apply the sign to the feedforward velocities and accelerations
         double currentPos = revolver.getCurrentPosition();
-        return (kV * targetVel) + (kA * targetAccel) + (kP * (profilePos - currentPos));
+        return (kV * targetVel * sgn) + (kA * targetAccel * sgn) + (kP * (profilePos - currentPos));
     }
 
     public boolean isBusy() {
@@ -129,6 +148,9 @@ public class Revolver {
     }
 
     public void rotateRevolver(double deg) {
+        if (Math.abs(deg) < 0.1) {
+            return;
+        }
         double deltaTicks = deg * SORT_MOTOR_TICKS_PER_TURN / 360.0;
 
         double newTarget = targetTicks + deltaTicks;
@@ -141,7 +163,7 @@ public class Revolver {
         profileStartTime = profileTimer.seconds();
 
         double distAbs = Math.abs(targetTicks - startPosition);
-        if (distAbs < 1.0) {
+        if (distAbs < 5.0) {
             state = RevolverState.IDLE;
             return;
         }
