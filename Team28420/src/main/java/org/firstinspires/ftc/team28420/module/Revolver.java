@@ -148,9 +148,9 @@ public class Revolver {
     }
 
     public void rotateRevolver(double deg) {
-        if (Math.abs(deg) < 0.1) {
-            return;
-        }
+//        if (Math.abs(deg) < 0.1) {
+//            return;
+//        }
         double deltaTicks = deg * SORT_MOTOR_TICKS_PER_TURN / 360.0;
 
         double newTarget = targetTicks + deltaTicks;
@@ -190,7 +190,7 @@ public class Revolver {
                 double elapsed = profileTimer.seconds() - profileStartTime;
 
                 if ((err <= POSITION_TOL_TICKS && vel <= VELOCITY_TOL_TPS && elapsed > MIN_PROFILE_TIME)
-                        || elapsed > plannedTotalTime + 0.35) {
+                        || elapsed > plannedTotalTime + 1) {
                     revolver.setPower(0);
                     state = RevolverState.IDLE;
                 }

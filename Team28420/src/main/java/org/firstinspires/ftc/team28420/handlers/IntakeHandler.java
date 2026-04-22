@@ -42,7 +42,8 @@ public class IntakeHandler {
             case SHOOTING_PREPARE:
                 if (shooterTime.milliseconds() > pusherReadyTime) {
                     state = ShooterState.SHOOTING_SPIN;
-                    revolver.rotateRevolver(scannerSorter.getMotif().length() * 120.0 + 60);
+                    revolver.rotateRevolver(scannerSorter.getMotif().length() * 120.0 + 240);
+                    scannerSorter.setCurMotif("");
                 }
                 break;
             case SHOOTING_SPIN:
@@ -55,10 +56,17 @@ public class IntakeHandler {
                 break;
             case STOP_SHOOTING:
                 if (shooterTime.milliseconds() > pusherReadyTime) {
-                    state = ShooterState.IDLE;
+                    state = ShooterState.RETURN_TO_SCAN;
+                    revolver.rotateRevolver(60);
                     shooterTime.reset();
                 }
                 break;
+            case RETURN_TO_SCAN:
+                if(!revolver.isBusy()) {
+                    state = ShooterState.IDLE;
+                    revolver.rotateRevolver(0);
+                    shooterTime.reset();
+                }
             case IDLE:
                 if (!isNearShootingSlot()) scannerSorter.scanBall();
                 break;
@@ -79,7 +87,7 @@ public class IntakeHandler {
     }
 
     private void alignRevolverToTarget() {
-        double finalRotationDeg = isNearShootingSlot() ? 0 : 60;
+        double finalRotationDeg = 60;//isNearShootingSlot() ? 0 : 60;
         int moveSlots = scannerSorter.getMoveSlots();
 
         // Add the extra rotation based on the required slots
@@ -87,8 +95,8 @@ public class IntakeHandler {
         if (moveSlots == 2) finalRotationDeg -= 120; // 60 - 120 = -60 degrees
 
         revolver.rotateRevolver(finalRotationDeg);
-
-        scannerSorter.setCurMotif(getTargetMotif());
+        if(getTargetMotif() != null)
+            scannerSorter.setCurMotif(getTargetMotif());
     }
 
     public String getTargetMotif() {
@@ -129,6 +137,9 @@ public class IntakeHandler {
 
     public void log(Telemetry telemetry) {
         scannerSorter.log(telemetry);
+        revolver.log(telemetry);
+
+        telemetry.addData("Is near", isNearShootingSlot());
     }
 
     private void pushBall(boolean push) {
@@ -148,5 +159,5 @@ public class IntakeHandler {
         shooterTime.reset();
     }
 
-    public enum ShooterState {IDLE, SHOOTING_PREPARE, SHOOTING_SPIN, STOP_SHOOTING}
+    public enum ShooterState {IDLE, SHOOTING_PREPARE, SHOOTING_SPIN, STOP_SHOOTING, RETURN_TO_SCAN}
 }

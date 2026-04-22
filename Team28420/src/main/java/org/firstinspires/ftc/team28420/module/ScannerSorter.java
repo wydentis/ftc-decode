@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.team28420.module;
 
+import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -11,14 +12,17 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.team28420.processors.BallDetectionProcessor;
 
+@Config
 public class ScannerSorter {
     /*** SCANNER CONSTANTS ***/
     public static double SCANNED_BALL_MS = 30;
-    public static double BALL_DETECTION_THRESHOLD = 2;
+    public static double BALL_DETECTION_THRESHOLD = 3;
     private boolean scanAllowed = true;
     private boolean ballPresent = false;
     private boolean potentialBallDetected = false;
     private final MotifSorter sorter = new MotifSorter();
+    double distance = 0;
+    NormalizedRGBA colors = new NormalizedRGBA();
 
     /*** HARDWARE ***/
     private final ColorSensor cs;
@@ -77,13 +81,13 @@ public class ScannerSorter {
 
     private BallDetectionProcessor.BallColor getDetectedColor() {
         NormalizedRGBA colors = ((NormalizedColorSensor) cs).getNormalizedColors();
-
+        this.colors = colors;
         // mostly green
-        if (colors.green > colors.red * 1.5 && colors.green > colors.blue * 1.5) {
+        if (colors.green > colors.red && colors.green > colors.blue) {
             return BallDetectionProcessor.BallColor.GREEN;
         }
         // red + blue but not green
-        if (colors.blue > colors.green * 1.2 && colors.red > colors.green) {
+        if (colors.blue > colors.red && colors.green > colors.red) {
             return BallDetectionProcessor.BallColor.PURPLE;
         }
         return null;
@@ -91,15 +95,16 @@ public class ScannerSorter {
     private boolean isBallInRange() {
         DistanceSensor sensorDistance = (DistanceSensor) cs;
         double distanceInCm = sensorDistance.getDistance(DistanceUnit.CM);
+        distance = distanceInCm;
 
-        return distanceInCm <= BALL_DETECTION_THRESHOLD;
+        return distanceInCm >= 1.5 && distanceInCm <= BALL_DETECTION_THRESHOLD;
     }
 
     private void processNewBall(BallDetectionProcessor.BallColor color) {
         sorter.appendBallToMotif(color);
 
         if (sorter.isMotifFull()) {
-            if(sorter.isCorrectMotif() && onMotifGathered != null) onMotifGathered.run();
+            if(onMotifGathered != null) onMotifGathered.run();
         } else {
             if(onBallDetected != null) onBallDetected.run();
         }
@@ -113,6 +118,10 @@ public class ScannerSorter {
         telemetry.addData("MOTIF", sorter.getCurMotif());
         telemetry.addData("CORRECT MOTIF", sorter.isCorrectMotif());
         telemetry.addData("SCANNED motif", sorter.getTargetMotif());
+        telemetry.addData("SCANNED DISTANCE", distance);
+        telemetry.addData("SCANNED R", colors.red);
+        telemetry.addData("SCANNED G", colors.green);
+        telemetry.addData("SCANNED B", colors.green);
     }
 
     /**

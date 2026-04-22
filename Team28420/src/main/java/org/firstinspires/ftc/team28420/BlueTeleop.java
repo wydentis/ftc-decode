@@ -10,6 +10,7 @@ import org.firstinspires.ftc.team28420.types.MovementParams;
 @TeleOp(name = "BLUE MAIN TELEOP", group = "MAIN")
 public class BlueTeleop extends LinearOpMode {
     private Actions actions;
+    boolean pressed = false;
 
     private void initialize() {
         telemetry = Actions.getFTCDashboardTelemetry(telemetry);
@@ -22,7 +23,7 @@ public class BlueTeleop extends LinearOpMode {
         if (gamepad1.left_stick_button) {
             actions.brake();
         } else if (gamepad1.left_bumper) {
-            actions.moveToAprilTag();
+            //actions.moveToAprilTag();
         } else {
             manualMove();
         }
@@ -37,10 +38,13 @@ public class BlueTeleop extends LinearOpMode {
     }
 
     private void shoot() {
-        if (gamepad1.left_bumper && gamepad1.right_trigger_pressed) {
+        if(gamepad1.right_bumper && !pressed) {
             actions.shoot();
-        } else if (gamepad1.right_trigger_pressed) {
-            actions.shootWithCheck();
+            pressed = true;
+        } else pressed = false;
+
+        if (gamepad1.right_trigger_pressed) {
+
         }
     }
 

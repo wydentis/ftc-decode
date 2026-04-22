@@ -15,7 +15,7 @@ public class Flywheel {
         public static double kI = 0;
         public static double kP = 37;
         public static double kD = 2;
-        public static double MAX_VEL = 200;
+        public static double MAX_VEL = 1000;
     }
 
     /*** HARDWARE ***/
@@ -38,7 +38,7 @@ public class Flywheel {
      *
      * @param k
      */
-    public void setVelocityCoefficient(float k) {
+    public void setVelocityCoefficient(double k) {
         double desired = FlywheelConfig.MAX_VEL * k;
 
         left.setVelocity(desired);

@@ -10,7 +10,7 @@ public class Dribbler {
 
     @Config
     public static class DribblerConf {
-        public static int INTAKE_VELOCITY = 2067;
+        public static int INTAKE_VELOCITY = 5067;
         public static int DROP_VELOCITY = (int) (INTAKE_VELOCITY * 0.3);
     }
 

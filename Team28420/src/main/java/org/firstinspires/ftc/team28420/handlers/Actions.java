@@ -68,6 +68,7 @@ public class Actions {
         imu.update();
         cameraHandler.update();
         intakeHandler.update();
+        flywheel.setVelocityCoefficient(1.5);
 
         setMotif();
     }

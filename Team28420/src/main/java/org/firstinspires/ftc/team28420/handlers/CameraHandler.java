@@ -46,6 +46,9 @@ public class CameraHandler {
 
     public String getMotif() {
         AprilTagDetection detection = aprilTagWrapper.getDetection(AprilTag.GREEN);
+        if (detection == null) {
+            return null;
+        }
         return AprilTag.getMotif(detection.id);
     }
 
