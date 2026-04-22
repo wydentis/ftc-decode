@@ -21,7 +21,6 @@ public class BlueTeleop extends LinearOpMode {
     private void move() {
         if (gamepad1.left_stick_button) {
             actions.brake();
-
         } else if (gamepad1.left_bumper) {
             actions.moveToAprilTag();
         } else {
