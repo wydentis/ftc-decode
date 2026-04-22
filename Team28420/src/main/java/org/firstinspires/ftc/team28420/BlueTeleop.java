@@ -39,7 +39,7 @@ public class BlueTeleop extends LinearOpMode {
     private void shoot() {
         if (gamepad1.left_bumper && gamepad1.right_trigger_pressed) {
             actions.shoot();
-        } else if (gamepad1.left_bumper) {
+        } else if (gamepad1.right_trigger_pressed) {
             actions.shootWithCheck();
         }
     }
