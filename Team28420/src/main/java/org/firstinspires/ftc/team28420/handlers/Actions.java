@@ -60,8 +60,6 @@ public class Actions {
         cameraHandler.setup();
         intakeHandler.setup();
         flywheel.setup();
-
-        setMotif();
     }
 
     public void update() {
@@ -70,6 +68,8 @@ public class Actions {
         imu.update();
         cameraHandler.update();
         intakeHandler.update();
+
+        setMotif();
     }
 
     public void shoot() {
